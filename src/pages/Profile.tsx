@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { 
   User, 
   GraduationCap, 
@@ -16,11 +18,15 @@ import {
   Calendar,
   Edit3,
   Save,
-  X
+  X,
+  LogIn
 } from "lucide-react";
 
 const Profile = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
   // TODO: Get user data from authentication context
   const [userData, setUserData] = useState({
@@ -35,6 +41,15 @@ const Profile = () => {
     location: "Hostel Block A, Room 204",
     joinedDate: "September 2021"
   });
+
+  useEffect(() => {
+    const authStatus = localStorage.getItem("isAuthenticated");
+    if (authStatus !== "true") {
+      setIsAuthenticated(false);
+      return;
+    }
+    setIsAuthenticated(true);
+  }, []);
 
   const [editData, setEditData] = useState(userData);
 
@@ -64,6 +79,37 @@ const Profile = () => {
       interests: editData.interests.filter(i => i !== interest)
     });
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle px-4">
+        <Card className="w-full max-w-md shadow-elegant text-center">
+          <CardHeader className="space-y-4">
+            <div className="flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-xl shadow-glow mx-auto">
+              <LogIn className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold text-primary">Sign In Required</CardTitle>
+              <CardDescription>Please sign in to view your profile</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              You need to be logged in to access your profile page.
+            </p>
+            <div className="flex flex-col space-y-2">
+              <Button variant="hero" onClick={() => navigate("/login")}>
+                Sign In
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/signup")}>
+                Create Account
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">

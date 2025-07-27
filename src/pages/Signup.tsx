@@ -16,7 +16,8 @@ const Signup = () => {
     email: "",
     password: "",
     department: "",
-    year: ""
+    year: "",
+    userType: ""
   });
   const navigate = useNavigate();
 
@@ -96,37 +97,56 @@ const Signup = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
-              <Select onValueChange={(value) => setFormData({...formData, department: value})}>
+              <Label htmlFor="userType">I am a</Label>
+              <Select onValueChange={(value) => setFormData({...formData, userType: value})}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select your department" />
+                  <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="computer-science">Computer Science</SelectItem>
-                  <SelectItem value="engineering">Engineering</SelectItem>
-                  <SelectItem value="medicine">Medicine</SelectItem>
-                  <SelectItem value="business">Business Administration</SelectItem>
-                  <SelectItem value="arts">Arts & Humanities</SelectItem>
-                  <SelectItem value="sciences">Sciences</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="food-vendor">Food Vendor</SelectItem>
+                  <SelectItem value="driver">Driver</SelectItem>
+                  <SelectItem value="vendor">General Vendor</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="year">Year of Study</Label>
-              <Select onValueChange={(value) => setFormData({...formData, year: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your year" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1st Year</SelectItem>
-                  <SelectItem value="2">2nd Year</SelectItem>
-                  <SelectItem value="3">3rd Year</SelectItem>
-                  <SelectItem value="4">4th Year</SelectItem>
-                  <SelectItem value="5">5th Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {formData.userType === "student" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Select onValueChange={(value) => setFormData({...formData, department: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="computer-science">Computer Science</SelectItem>
+                      <SelectItem value="engineering">Engineering</SelectItem>
+                      <SelectItem value="medicine">Medicine</SelectItem>
+                      <SelectItem value="business">Business Administration</SelectItem>
+                      <SelectItem value="arts">Arts & Humanities</SelectItem>
+                      <SelectItem value="sciences">Sciences</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="year">Year of Study</Label>
+                  <Select onValueChange={(value) => setFormData({...formData, year: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1st Year</SelectItem>
+                      <SelectItem value="2">2nd Year</SelectItem>
+                      <SelectItem value="3">3rd Year</SelectItem>
+                      <SelectItem value="4">4th Year</SelectItem>
+                      <SelectItem value="5">5th Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
             
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
