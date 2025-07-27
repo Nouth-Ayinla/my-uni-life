@@ -22,10 +22,16 @@ const Signup = () => {
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual signup logic
+    // TODO: Implement actual signup logic with Supabase
     console.log("Signup attempt:", formData);
-    // For now, just navigate to home
-    navigate("/");
+    
+    // For now, simulate successful signup and auto-login
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("userPhone", formData.phone);
+    localStorage.setItem("userMatric", formData.matricNo);
+    
+    // Navigate to dashboard after signup
+    navigate("/dashboard");
   };
 
   return (

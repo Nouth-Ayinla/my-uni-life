@@ -16,10 +16,15 @@ const Login = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual login logic
+    // TODO: Implement actual login logic with Supabase
     console.log("Login attempt:", formData);
-    // For now, just navigate to home
-    navigate("/");
+    
+    // For now, simulate successful login
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("userPhone", formData.identifier);
+    
+    // Navigate to dashboard after login
+    navigate("/dashboard");
   };
 
   return (
