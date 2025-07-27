@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   Users, 
@@ -11,10 +11,13 @@ import {
   X,
   GraduationCap 
 } from "lucide-react";
+import AnnouncementPanel from "./AnnouncementPanel";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -22,8 +25,26 @@ const Navigation = () => {
     { name: "Community", path: "/community", icon: Users },
     { name: "UniStore", path: "/store", icon: ShoppingBag },
     { name: "UniRide", path: "/ride", icon: Car },
-    { name: "Messages", path: "/messages", icon: MessageSquare },
+    { 
+      name: "Messages", 
+      path: "/messages", 
+      icon: MessageSquare,
+      requiresAuth: true
+    },
   ];
+
+  const handleNavClick = (item: typeof navItems[0], e: React.MouseEvent) => {
+    if (item.requiresAuth) {
+      // TODO: Check if user is authenticated
+      const isAuthenticated = false; // Replace with actual auth check
+      
+      if (!isAuthenticated) {
+        e.preventDefault();
+        navigate("/login");
+        return;
+      }
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -43,6 +64,7 @@ const Navigation = () => {
               <Link
                 key={item.name}
                 to={item.path}
+                onClick={(e) => handleNavClick(item, e)}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-smooth ${
                   isActive(item.path)
                     ? "bg-primary text-primary-foreground shadow-card"
@@ -54,7 +76,12 @@ const Navigation = () => {
               </Link>
             ))}
             
-            <Button variant="ghost" size="icon" className="relative">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="relative"
+              onClick={() => setIsAnnouncementOpen(true)}
+            >
               <Bell className="h-4 w-4" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full text-xs"></span>
             </Button>
@@ -87,12 +114,15 @@ const Navigation = () => {
               <Link
                 key={item.name}
                 to={item.path}
+                onClick={(e) => {
+                  handleNavClick(item, e);
+                  setIsMobileMenuOpen(false);
+                }}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-smooth ${
                   isActive(item.path)
                     ? "bg-primary text-primary-foreground shadow-card"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 }`}
-                onClick={() => setIsMobileMenuOpen(false)}
               >
                 <item.icon className="h-5 w-5" />
                 <span>{item.name}</span>
@@ -110,6 +140,11 @@ const Navigation = () => {
           </div>
         )}
       </div>
+      
+      <AnnouncementPanel 
+        isOpen={isAnnouncementOpen} 
+        onClose={() => setIsAnnouncementOpen(false)} 
+      />
     </nav>
   );
 };
