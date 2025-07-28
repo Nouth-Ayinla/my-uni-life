@@ -1,192 +1,617 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   Users, 
-  ShoppingBag, 
-  Car, 
-  MessageSquare, 
   TrendingUp, 
+  MessageSquare, 
+  ShoppingCart,
+  Activity,
   AlertTriangle,
   CheckCircle,
   Clock,
-  Settings,
-  BarChart3
-} from "lucide-react";
+  Search,
+  Filter,
+  MoreHorizontal,
+  UserCheck,
+  UserX,
+  Ban,
+  Eye,
+  Trash2,
+  Star,
+  Car,
+  Store,
+  Megaphone
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
+  const [users, setUsers] = useState([]);
+  const [flaggedContent, setFlaggedContent] = useState([]);
+  const [pendingVerifications, setPendingVerifications] = useState([]);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const adminStatus = localStorage.getItem("isAdmin");
-    if (adminStatus !== "true") {
-      navigate("/");
-      return;
-    }
-    setIsAdmin(true);
-  }, [navigate]);
+    checkAdminAccess();
+  }, []);
 
-  if (!isAdmin) {
-    return null;
-  }
+  const checkAdminAccess = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
+
+      // Get user profile and check role
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error || !profile || !['admin', 'super_admin'].includes(profile.role)) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access the admin dashboard.",
+          variant: "destructive"
+        });
+        navigate('/dashboard');
+        return;
+      }
+
+      setUser(session.user);
+      setUserRole(profile.role);
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error checking admin access:', error);
+      navigate('/auth');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch users
+      const { data: usersData } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          universities(name)
+        `)
+        .order('created_at', { ascending: false });
+
+      // Fetch flagged content
+      const { data: flaggedData } = await supabase
+        .from('flagged_content')
+        .select(`
+          *,
+          profiles!reported_by(full_name)
+        `)
+        .eq('status', 'pending');
+
+      // Fetch pending verifications
+      const { data: pendingData } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          universities(name),
+          driver_profiles(*),
+          vendor_profiles(*)
+        `)
+        .eq('verification_status', 'pending');
+
+      setUsers(usersData || []);
+      setFlaggedContent(flaggedData || []);
+      setPendingVerifications(pendingData || []);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
+
+  const updateUserStatus = async (userId: string, status: 'active' | 'suspended' | 'banned', reason?: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ user_status: status })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      if (status === 'banned' && reason) {
+        await supabase
+          .from('user_bans')
+          .insert({
+            user_id: userId,
+            banned_by: user.id,
+            reason: reason,
+            ban_type: 'permanent'
+          });
+      }
+
+      toast({
+        title: "User status updated",
+        description: `User has been ${status}`,
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update user status",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateVerificationStatus = async (userId: string, status: 'pending' | 'approved' | 'rejected' | 'flagged') => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ verification_status: status })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Verification updated",
+        description: `User verification ${status}`,
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update verification status",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleFlaggedContent = async (flagId: string, action: string) => {
+    try {
+      const { error } = await supabase
+        .from('flagged_content')
+        .update({ 
+          status: action,
+          reviewed_by: user.id
+        })
+        .eq('id', flagId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Content reviewed",
+        description: `Content has been ${action}`,
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to handle flagged content",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = filterRole === 'all' || user.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
 
   const stats = [
-    { title: "Total Users", value: "2,847", icon: Users, trend: "+12%" },
-    { title: "Active Orders", value: "156", icon: ShoppingBag, trend: "+8%" },
-    { title: "Ride Requests", value: "89", icon: Car, trend: "+15%" },
-    { title: "Messages", value: "1,234", icon: MessageSquare, trend: "+5%" },
+    {
+      title: "Total Users",
+      value: users.length.toString(),
+      change: "+12%",
+      trend: "up",
+      icon: Users
+    },
+    {
+      title: "Pending Verifications",
+      value: pendingVerifications.length.toString(),
+      change: "+5%",
+      trend: "up",
+      icon: Clock
+    },
+    {
+      title: "Flagged Content",
+      value: flaggedContent.length.toString(),
+      change: "-8%",
+      trend: "down",
+      icon: AlertTriangle
+    },
+    {
+      title: "Active Users",
+      value: users.filter(u => u.user_status === 'active').length.toString(),
+      change: "+15%",
+      trend: "up",
+      icon: Activity
+    }
   ];
 
-  const recentActivities = [
-    { type: "user", message: "New student registered", time: "2 min ago", status: "new" },
-    { type: "order", message: "Order #1234 completed", time: "5 min ago", status: "completed" },
-    { type: "ride", message: "Emergency ride requested", time: "10 min ago", status: "urgent" },
-    { type: "report", message: "Content reported by user", time: "15 min ago", status: "pending" },
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+          <p>Loading admin dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, Nouth. Here's what's happening on UniConnect.</p>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, {user?.email}</p>
         </div>
+        <div className="flex items-center space-x-2">
+          <CheckCircle className="h-5 w-5 text-green-500" />
+          <span className="text-sm text-muted-foreground">System Status: Online</span>
+        </div>
+      </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => (
-            <Card key={stat.title} className="shadow-card">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl font-bold text-primary">{stat.value}</p>
-                    <p className="text-xs text-green-600 flex items-center mt-1">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      {stat.trend}
-                    </p>
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={index}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">
+                  <TrendingUp className="inline h-3 w-3 mr-1" />
+                  {stat.change} from last month
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="verification">Verification</TabsTrigger>
+          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+          <TabsTrigger value="rides">Rides</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2">
+                  <Button variant="outline" className="justify-start">
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Review Pending Verifications ({pendingVerifications.length})
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    Moderate Flagged Content ({flaggedContent.length})
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Megaphone className="mr-2 h-4 w-4" />
+                    Send Platform Announcement
+                  </Button>
+                  <Button variant="outline" className="justify-start">
+                    <Users className="mr-2 h-4 w-4" />
+                    Manage User Roles
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>System Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span>Total Students:</span>
+                    <span className="font-semibold">{users.filter(u => u.role === 'student').length}</span>
                   </div>
-                  <div className="p-3 bg-gradient-primary rounded-xl shadow-glow">
-                    <stat.icon className="h-6 w-6 text-white" />
+                  <div className="flex justify-between">
+                    <span>Total Vendors:</span>
+                    <span className="font-semibold">{users.filter(u => u.role === 'vendor').length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Drivers:</span>
+                    <span className="font-semibold">{users.filter(u => u.role === 'driver').length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Active Users:</span>
+                    <span className="font-semibold text-green-600">
+                      {users.filter(u => u.user_status === 'active').length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Banned Users:</span>
+                    <span className="font-semibold text-red-600">
+                      {users.filter(u => u.user_status === 'banned').length}
+                    </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </div>
+        </TabsContent>
 
-        {/* Main Content */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="content">Content</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent Activities */}
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Clock className="h-5 w-5 mr-2" />
-                    Recent Activities
-                  </CardTitle>
-                  <CardDescription>Latest platform activities requiring attention</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentActivities.map((activity, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{activity.message}</p>
-                          <p className="text-xs text-muted-foreground">{activity.time}</p>
-                        </div>
-                        <Badge 
-                          variant={activity.status === "urgent" ? "destructive" : 
-                                  activity.status === "completed" ? "default" : "secondary"}
-                        >
-                          {activity.status}
-                        </Badge>
+        <TabsContent value="users" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Management</CardTitle>
+              <div className="flex gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={filterRole} onValueChange={setFilterRole}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Filter by role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="student">Students</SelectItem>
+                    <SelectItem value="vendor">Vendors</SelectItem>
+                    <SelectItem value="driver">Drivers</SelectItem>
+                    <SelectItem value="admin">Admins</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredUsers.map((user) => (
+                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                        <Users className="h-5 w-5 text-primary" />
                       </div>
-                    ))}
+                      <div>
+                        <p className="font-medium">{user.full_name || 'No name'}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                            {user.role}
+                          </Badge>
+                          <Badge 
+                            variant={
+                              user.user_status === 'active' ? 'default' : 
+                              user.user_status === 'suspended' ? 'destructive' : 'secondary'
+                            }
+                          >
+                            {user.user_status}
+                          </Badge>
+                          <Badge 
+                            variant={
+                              user.verification_status === 'approved' ? 'default' : 
+                              user.verification_status === 'pending' ? 'secondary' : 'destructive'
+                            }
+                          >
+                            {user.verification_status}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateUserStatus(user.id, user.user_status === 'active' ? 'suspended' : 'active')}
+                      >
+                        {user.user_status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => updateUserStatus(user.id, 'banned', 'Administrative action')}
+                      >
+                        <Ban className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              {/* Quick Actions */}
-              <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Settings className="h-5 w-5 mr-2" />
-                    Quick Actions
-                  </CardTitle>
-                  <CardDescription>Common administrative tasks</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Users className="h-4 w-4 mr-2" />
-                    Manage Users
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Review Reports
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Send Announcement
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    View Analytics
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+        <TabsContent value="verification" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Verification & Approval</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {pendingVerifications.map((user) => (
+                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                        <Clock className="h-5 w-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{user.full_name}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <Badge variant="secondary">{user.role}</Badge>
+                        {user.universities && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {user.universities.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        onClick={() => updateVerificationStatus(user.id, 'approved')}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => updateVerificationStatus(user.id, 'rejected')}
+                      >
+                        <UserX className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {pendingVerifications.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No pending verifications
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="users">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>Manage platform users and their permissions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">User management features will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+        <TabsContent value="content" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Content Moderation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {flaggedContent.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Flagged {item.content_type}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Reported by: {item.profiles?.full_name || 'Anonymous'}
+                        </p>
+                        <p className="text-sm">Reason: {item.reason}</p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleFlaggedContent(item.id, 'reviewed')}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Review
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleFlaggedContent(item.id, 'removed')}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {flaggedContent.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No flagged content to review
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="content">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Content Moderation</CardTitle>
-                <CardDescription>Review and moderate platform content</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Content moderation tools will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+        <TabsContent value="marketplace">
+          <Card>
+            <CardHeader>
+              <CardTitle>Marketplace Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Store className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                  Marketplace management features will be implemented here.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="settings">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Platform Settings</CardTitle>
-                <CardDescription>Configure platform-wide settings</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Platform configuration options will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+        <TabsContent value="rides">
+          <Card>
+            <CardHeader>
+              <CardTitle>Ride Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Car className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                  Ride management features will be implemented here.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <Card>
+            <CardHeader>
+              <CardTitle>System Settings & Announcements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Megaphone className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                  System settings and announcement features will be implemented here.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

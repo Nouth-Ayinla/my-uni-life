@@ -8,14 +8,13 @@ import Home from "./pages/Home";
 import Community from "./pages/Community";
 import Store from "./pages/Store";
 import Ride from "./pages/Ride";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
-import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
+import UniversitySelection from "./pages/UniversitySelection";
+import Auth from "./pages/Auth";
 
 const queryClient = new QueryClient();
 
@@ -25,23 +24,29 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/community" element={<Community />} />
-            <Route path="/store" element={<Store />} />
-            <Route path="/ride" element={<Ride />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/messages" element={<Messages />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
+        <Routes>
+          {/* Routes without Layout */}
+          <Route path="/university-selection" element={<UniversitySelection />} />
+          <Route path="/auth" element={<Auth />} />
+          
+          {/* Routes with Layout */}
+          <Route path="/*" element={
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/community" element={<Community />} />
+                <Route path="/store" element={<Store />} />
+                <Route path="/ride" element={<Ride />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                <Route path="/messages" element={<Messages />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          } />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
