@@ -58,7 +58,7 @@ const UniversitySelection = () => {
   const handleUniversitySelect = (university: University) => {
     // Store selected university in localStorage for signup
     localStorage.setItem('selectedUniversity', JSON.stringify(university));
-    navigate('/signup');
+    navigate('/auth');
   };
 
   if (loading) {
@@ -74,7 +74,7 @@ const UniversitySelection = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <GraduationCap className="h-16 w-16 mx-auto mb-4 text-primary" />
           <h1 className="text-3xl font-bold mb-2">Select Your University</h1>
@@ -95,7 +95,7 @@ const UniversitySelection = () => {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredUniversities.map((university) => (
             <Card 
               key={university.id} 
