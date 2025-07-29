@@ -11,6 +11,7 @@ interface University {
   name: string;
   location: string;
   code: string;
+  logo_url?: string;
 }
 
 const UniversitySelection = () => {
@@ -98,23 +99,52 @@ const UniversitySelection = () => {
           {filteredUniversities.map((university) => (
             <Card 
               key={university.id} 
-              className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary/50"
+              className="cursor-pointer hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 hover:scale-105"
               onClick={() => handleUniversitySelect(university)}
             >
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold">
-                  {university.name}
-                </CardTitle>
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
+                    {university.logo_url ? (
+                      <img 
+                        src={university.logo_url} 
+                        alt={`${university.name} logo`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallback = target.parentElement?.querySelector('.fallback-logo') as HTMLElement;
+                          if (fallback) {
+                            fallback.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="fallback-logo w-full h-full bg-gradient-primary rounded-full flex items-center justify-center text-white font-semibold text-lg" 
+                      style={{ display: university.logo_url ? 'none' : 'flex' }}
+                    >
+                      {university.code.charAt(0)}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-lg font-semibold leading-tight">
+                      {university.name}
+                    </CardTitle>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center text-muted-foreground mb-2">
-                  <MapPin className="h-4 w-4 mr-2" />
+                <div className="flex items-center text-muted-foreground mb-3">
+                  <MapPin className="h-4 w-4 mr-2 text-primary" />
                   <span className="text-sm">{university.location}</span>
                 </div>
-                <div className="text-sm font-medium text-primary">
-                  {university.code}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm font-medium text-primary bg-primary/10 px-2 py-1 rounded">
+                    {university.code}
+                  </div>
                 </div>
-                <Button className="w-full mt-4" variant="outline">
+                <Button className="w-full" variant="outline" size="sm">
                   Select University
                 </Button>
               </CardContent>

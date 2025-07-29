@@ -1,4 +1,7 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Shield } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import Navigation from "./Navigation";
 
 interface LayoutProps {
@@ -6,6 +9,49 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    // Get current user and profile
+    const getCurrentUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        setUserProfile(profile);
+      }
+    };
+
+    getCurrentUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          setUserProfile(profile);
+        } else {
+          setUser(null);
+          setUserProfile(null);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -28,7 +74,17 @@ const Layout = ({ children }: LayoutProps) => {
                 <li><a href="/community" className="hover:opacity-100">Community</a></li>
                 <li><a href="/store" className="hover:opacity-100">UniStore</a></li>
                 <li><a href="/ride" className="hover:opacity-100">UniRide</a></li>
-                <li><a href="/admin" className="hover:opacity-100">Admin</a></li>
+                {isAdmin && (
+                  <li>
+                    <Link 
+                      to="/admin-dashboard" 
+                      className="hover:opacity-100 flex items-center space-x-1 text-accent"
+                    >
+                      <Shield className="h-3 w-3" />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                  </li>
+                )}
               </ul>
             </div>
             
@@ -44,9 +100,17 @@ const Layout = ({ children }: LayoutProps) => {
             <div>
               <h4 className="font-semibold mb-3">Account</h4>
               <ul className="space-y-2 text-sm opacity-80">
-                <li><a href="/login" className="hover:opacity-100">Login</a></li>
-                <li><a href="/signup" className="hover:opacity-100">Sign Up</a></li>
-                <li><a href="/profile" className="hover:opacity-100">Profile</a></li>
+                {!user ? (
+                  <>
+                    <li><Link to="/auth" className="hover:opacity-100">Login</Link></li>
+                    <li><Link to="/auth" className="hover:opacity-100">Sign Up</Link></li>
+                  </>
+                ) : (
+                  <>
+                    <li><Link to="/profile" className="hover:opacity-100">Profile</Link></li>
+                    <li><Link to="/dashboard" className="hover:opacity-100">Dashboard</Link></li>
+                  </>
+                )}
               </ul>
             </div>
           </div>
