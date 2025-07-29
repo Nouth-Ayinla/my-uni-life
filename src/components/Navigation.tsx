@@ -24,23 +24,51 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import AnnouncementPanel from "./AnnouncementPanel";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Check authentication status
+  // Set up authentication state
   useEffect(() => {
-    const authStatus = localStorage.getItem("isAuthenticated");
-    const adminStatus = localStorage.getItem("isAdmin");
-    setIsAuthenticated(authStatus === "true");
-    setIsAdmin(adminStatus === "true");
-  }, [location.pathname]);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Fetch user profile if authenticated
+        if (session?.user) {
+          setTimeout(async () => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            setUserProfile(profile);
+          }, 0);
+        } else {
+          setUserProfile(null);
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -57,21 +85,20 @@ const Navigation = () => {
   ];
 
   const handleNavClick = (item: typeof navItems[0], e: React.MouseEvent) => {
-    if (item.requiresAuth && !isAuthenticated) {
+    if (item.requiresAuth && !user) {
       e.preventDefault();
-      navigate("/login");
+      navigate("/auth");
       return;
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("adminUser");
-    setIsAuthenticated(false);
-    setIsAdmin(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/");
   };
+
+  const isAuthenticated = !!user;
+  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -120,7 +147,7 @@ const Navigation = () => {
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="/placeholder.svg" alt="Profile" />
                       <AvatarFallback className="bg-gradient-primary text-white">
-                        {isAdmin ? "A" : "U"}
+                        {userProfile?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -129,10 +156,10 @@ const Navigation = () => {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {isAdmin ? "Admin User" : "Student"}
+                        {userProfile?.full_name || user?.email}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {isAdmin ? "Admin Dashboard" : "Dashboard"}
+                        {userProfile?.role || 'student'}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -171,16 +198,10 @@ const Navigation = () => {
             ) : (
               <div className="flex items-center space-x-2">
                 <Button variant="outline" asChild>
-                  <Link to="/login">Login</Link>
+                  <Link to="/auth">Login</Link>
                 </Button>
-                <Button variant="hero" asChild>
-                  <Link to="/signup">Sign Up</Link>
-                </Button>
-                <Button variant="ghost" asChild>
-                  <Link to="/admin-login" className="flex items-center space-x-1">
-                    <Shield className="h-4 w-4" />
-                    <span>Admin</span>
-                  </Link>
+                <Button className="bg-gradient-primary text-white hover:opacity-90" asChild>
+                  <Link to="/auth">Sign Up</Link>
                 </Button>
               </div>
             )}
@@ -244,13 +265,10 @@ const Navigation = () => {
               ) : (
                 <>
                   <Button variant="outline" asChild>
-                    <Link to="/login">Login</Link>
+                    <Link to="/auth">Login</Link>
                   </Button>
-                  <Button variant="hero" asChild>
-                    <Link to="/signup">Sign Up</Link>
-                  </Button>
-                  <Button variant="ghost" asChild>
-                    <Link to="/admin-login">Admin Login</Link>
+                  <Button className="bg-gradient-primary text-white hover:opacity-90" asChild>
+                    <Link to="/auth">Sign Up</Link>
                   </Button>
                 </>
               )}
