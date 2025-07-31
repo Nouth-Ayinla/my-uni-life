@@ -34,7 +34,7 @@ import {
   Store,
   Megaphone
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { adminAPI } from '@/api/admin';
 import { useToast } from '@/hooks/use-toast';
 
 const AdminDashboard = () => {
@@ -55,21 +55,17 @@ const AdminDashboard = () => {
 
   const checkAdminAccess = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Check if user is authenticated and is admin
+      const isAuth = localStorage.getItem('isAuthenticated') === 'true';
+      const userEmail = localStorage.getItem('userEmail');
       
-      if (!session) {
-        navigate('/auth');
+      if (!isAuth || !userEmail) {
+        navigate('/login');
         return;
       }
 
-      // Get user profile and check role
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (error || !profile || !['admin', 'super_admin'].includes(profile.role)) {
+      // Simple admin check - replace with your actual admin logic
+      if (userEmail !== 'admin@example.com') {
         toast({
           title: "Access Denied",
           description: "You don't have permission to access the admin dashboard.",
@@ -79,12 +75,12 @@ const AdminDashboard = () => {
         return;
       }
 
-      setUser(session.user);
-      setUserRole(profile.role);
+      setUser({ email: userEmail });
+      setUserRole('admin');
       fetchDashboardData();
     } catch (error) {
       console.error('Error checking admin access:', error);
-      navigate('/auth');
+      navigate('/login');
     } finally {
       setLoading(false);
     }
@@ -92,38 +88,11 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch users
-      const { data: usersData } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          universities(name)
-        `)
-        .order('created_at', { ascending: false });
-
-      // Fetch flagged content
-      const { data: flaggedData } = await supabase
-        .from('flagged_content')
-        .select(`
-          *,
-          profiles!reported_by(full_name)
-        `)
-        .eq('status', 'pending');
-
-      // Fetch pending verifications
-      const { data: pendingData } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          universities(name),
-          driver_profiles(*),
-          vendor_profiles(*)
-        `)
-        .eq('verification_status', 'pending');
-
+      // Fetch users using mock API
+      const usersData = await adminAPI.getStudents();
       setUsers(usersData || []);
-      setFlaggedContent(flaggedData || []);
-      setPendingVerifications(pendingData || []);
+      setFlaggedContent([]);
+      setPendingVerifications([]);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
@@ -131,23 +100,7 @@ const AdminDashboard = () => {
 
   const updateUserStatus = async (userId: string, status: 'active' | 'suspended' | 'banned', reason?: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ user_status: status })
-        .eq('id', userId);
-
-      if (error) throw error;
-
-      if (status === 'banned' && reason) {
-        await supabase
-          .from('user_bans')
-          .insert({
-            user_id: userId,
-            banned_by: user.id,
-            reason: reason,
-            ban_type: 'permanent'
-          });
-      }
+      await adminAPI.updateStudent(parseInt(userId), { status });
 
       toast({
         title: "User status updated",
@@ -166,12 +119,7 @@ const AdminDashboard = () => {
 
   const updateVerificationStatus = async (userId: string, status: 'pending' | 'approved' | 'rejected' | 'flagged') => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ verification_status: status })
-        .eq('id', userId);
-
-      if (error) throw error;
+      await adminAPI.updateStudent(parseInt(userId), { verification_status: status });
 
       toast({
         title: "Verification updated",
@@ -190,15 +138,8 @@ const AdminDashboard = () => {
 
   const handleFlaggedContent = async (flagId: string, action: string) => {
     try {
-      const { error } = await supabase
-        .from('flagged_content')
-        .update({ 
-          status: action,
-          reviewed_by: user.id
-        })
-        .eq('id', flagId);
-
-      if (error) throw error;
+      // Mock implementation
+      console.log(`Handling flagged content ${flagId} with action ${action}`);
 
       toast({
         title: "Content reviewed",

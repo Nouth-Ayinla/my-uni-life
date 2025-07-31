@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, EyeOff, GraduationCap, User, Phone, MapPin } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { authAPI } from '@/api/auth';
 import { useToast } from '@/hooks/use-toast';
 
 interface University {
@@ -54,21 +54,17 @@ const Auth = () => {
     }
 
     // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/dashboard');
-      }
-    };
-    checkUser();
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
   }, [navigate]);
 
   const cleanupAuthState = () => {
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
+    // Clear any existing auth state
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userEmail');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -78,20 +74,16 @@ const Auth = () => {
     try {
       cleanupAuthState();
       
-      const { data, error } = await supabase.auth.signInWithPassword({
+      await authAPI.login({
         email: loginData.email,
         password: loginData.password,
       });
 
-      if (error) throw error;
-
-      if (data.user) {
-        toast({
-          title: "Welcome back!",
-          description: "You have been successfully logged in.",
-        });
-        window.location.href = '/dashboard';
-      }
+      toast({
+        title: "Welcome back!",
+        description: "You have been successfully logged in.",
+      });
+      navigate('/dashboard');
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -129,35 +121,28 @@ const Auth = () => {
     try {
       cleanupAuthState();
       
-      const { data, error } = await supabase.auth.signUp({
+      await authAPI.register({
+        fullName: signupData.fullName,
         email: signupData.email,
         password: signupData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-          data: {
-            full_name: signupData.fullName,
-            role: signupData.role,
-            university_id: selectedUniversity.id,
-            phone_number: signupData.phoneNumber,
-            department: signupData.department,
-            student_id: signupData.studentId,
-            business_name: signupData.businessName,
-            business_category: signupData.businessCategory,
-            license_number: signupData.licenseNumber,
-            vehicle_type: signupData.vehicleType
-          }
-        }
+        phoneNumber: signupData.phoneNumber,
+        role: signupData.role,
+        department: signupData.department,
+        studentId: signupData.studentId,
+        businessName: signupData.businessName,
+        businessCategory: signupData.businessCategory,
+        licenseNumber: signupData.licenseNumber,
+        vehicleType: signupData.vehicleType
       });
-
-      if (error) throw error;
 
       toast({
         title: "Account created!",
-        description: "Please check your email to verify your account.",
+        description: "You have been successfully registered and logged in.",
       });
 
       // Clear the stored university after successful signup
       localStorage.removeItem('selectedUniversity');
+      navigate('/dashboard');
       
     } catch (error: any) {
       toast({
