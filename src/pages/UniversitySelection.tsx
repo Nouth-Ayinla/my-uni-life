@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, MapPin, GraduationCap } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface University {
   id: string;
@@ -14,6 +14,66 @@ interface University {
   logo_url?: string;
 }
 
+// Mock data for Nigerian universities
+const mockUniversities: University[] = [
+  {
+    id: "1",
+    name: "University of Lagos",
+    location: "Lagos, Nigeria",
+    code: "UNILAG",
+    logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/University_of_Lagos_logo.png/120px-University_of_Lagos_logo.png"
+  },
+  {
+    id: "2",
+    name: "University of Ibadan",
+    location: "Ibadan, Nigeria",
+    code: "UI",
+    logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/University_of_Ibadan_logo.png/120px-University_of_Ibadan_logo.png"
+  },
+  {
+    id: "3",
+    name: "Ahmadu Bello University",
+    location: "Zaria, Nigeria",
+    code: "ABU",
+    logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Ahmadu_Bello_University_logo.png/120px-Ahmadu_Bello_University_logo.png"
+  },
+  {
+    id: "4",
+    name: "University of Nigeria",
+    location: "Nsukka, Nigeria",
+    code: "UNN",
+    logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/University_of_Nigeria_logo.png/120px-University_of_Nigeria_logo.png"
+  },
+  {
+    id: "5",
+    name: "Obafemi Awolowo University",
+    location: "Ile-Ife, Nigeria",
+    code: "OAU",
+    logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Obafemi_Awolowo_University_logo.png/120px-Obafemi_Awolowo_University_logo.png"
+  },
+  {
+    id: "6",
+    name: "University of Benin",
+    location: "Benin City, Nigeria",
+    code: "UNIBEN",
+    logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/University_of_Benin_logo.png/120px-University_of_Benin_logo.png"
+  },
+  {
+    id: "7",
+    name: "Lagos State University",
+    location: "Lagos, Nigeria",
+    code: "LASU",
+    logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Lagos_State_University_logo.png/120px-Lagos_State_University_logo.png"
+  },
+  {
+    id: "8",
+    name: "Covenant University",
+    location: "Ota, Nigeria",
+    code: "CU",
+    logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Covenant_University_logo.png/120px-Covenant_University_logo.png"
+  }
+];
+
 const UniversitySelection = () => {
   const [universities, setUniversities] = useState<University[]>([]);
   const [filteredUniversities, setFilteredUniversities] = useState<University[]>([]);
@@ -22,7 +82,12 @@ const UniversitySelection = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchUniversities();
+    // Simulate loading from API
+    setTimeout(() => {
+      setUniversities(mockUniversities);
+      setFilteredUniversities(mockUniversities);
+      setLoading(false);
+    }, 1000);
   }, []);
 
   useEffect(() => {
@@ -37,23 +102,6 @@ const UniversitySelection = () => {
       setFilteredUniversities(filtered);
     }
   }, [searchTerm, universities]);
-
-  const fetchUniversities = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('universities')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      setUniversities(data || []);
-      setFilteredUniversities(data || []);
-    } catch (error) {
-      console.error('Error fetching universities:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleUniversitySelect = (university: University) => {
     // Store selected university in localStorage for signup

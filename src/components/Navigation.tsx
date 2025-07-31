@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -13,8 +14,7 @@ import {
   GraduationCap,
   User,
   LogOut,
-  Settings,
-  Shield
+  Settings
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,51 +24,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
-import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import AnnouncementPanel from "./AnnouncementPanel";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // Set up authentication state
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Fetch user profile if authenticated
-        if (session?.user) {
-          setTimeout(async () => {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            setUserProfile(profile);
-          }, 0);
-        } else {
-          setUserProfile(null);
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  // Simple local storage based authentication
+  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+  const userEmail = localStorage.getItem("userEmail") || "";
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -85,20 +50,19 @@ const Navigation = () => {
   ];
 
   const handleNavClick = (item: typeof navItems[0], e: React.MouseEvent) => {
-    if (item.requiresAuth && !user) {
+    if (item.requiresAuth && !isAuthenticated) {
       e.preventDefault();
-      navigate("/auth");
+      // Could redirect to login or show message
       return;
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
+  const handleLogout = () => {
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userPhone");
+    window.location.href = "/";
   };
-
-  const isAuthenticated = !!user;
-  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -147,7 +111,7 @@ const Navigation = () => {
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="/placeholder.svg" alt="Profile" />
                       <AvatarFallback className="bg-gradient-primary text-white">
-                        {userProfile?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
+                        {userEmail.charAt(0)?.toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -156,38 +120,26 @@ const Navigation = () => {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {userProfile?.full_name || user?.email}
+                        {userEmail}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {userProfile?.role || 'student'}
+                        student
                       </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {!isAdmin && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to="/profile" className="flex items-center">
-                          <User className="mr-2 h-4 w-4" />
-                          <span>Profile</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/dashboard" className="flex items-center">
-                          <Settings className="mr-2 h-4 w-4" />
-                          <span>Dashboard</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  {isAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin-dashboard" className="flex items-center">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Admin Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="flex items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -243,21 +195,12 @@ const Navigation = () => {
             <div className="flex flex-col space-y-2 pt-4 border-t">
               {isAuthenticated ? (
                 <>
-                  {!isAdmin && (
-                    <>
-                      <Button variant="outline" asChild>
-                        <Link to="/profile">Profile</Link>
-                      </Button>
-                      <Button variant="outline" asChild>
-                        <Link to="/dashboard">Dashboard</Link>
-                      </Button>
-                    </>
-                  )}
-                  {isAdmin && (
-                    <Button variant="outline" asChild>
-                      <Link to="/admin-dashboard">Admin Dashboard</Link>
-                    </Button>
-                  )}
+                  <Button variant="outline" asChild>
+                    <Link to="/profile">Profile</Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link to="/dashboard">Dashboard</Link>
+                  </Button>
                   <Button variant="destructive" onClick={handleLogout}>
                     Logout
                   </Button>

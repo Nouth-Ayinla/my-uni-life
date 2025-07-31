@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,15 +17,19 @@ const Login = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual login logic with Supabase
     console.log("Login attempt:", formData);
     
-    // For now, simulate successful login
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("userPhone", formData.identifier);
-    
-    // Navigate to dashboard after login
-    navigate("/dashboard");
+    // Simple mock authentication
+    if (formData.identifier && formData.password) {
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("userEmail", formData.identifier);
+      localStorage.setItem("userPhone", formData.identifier);
+      
+      // Navigate to dashboard after login
+      navigate("/dashboard");
+    } else {
+      alert("Please enter both identifier and password");
+    }
   };
 
   return (
@@ -84,7 +89,7 @@ const Login = () => {
           <div className="mt-6 text-center space-y-2">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{" "}
-              <Link to="/signup" className="text-primary hover:underline font-medium">
+              <Link to="/auth" className="text-primary hover:underline font-medium">
                 Sign up here
               </Link>
             </p>
