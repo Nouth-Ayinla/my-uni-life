@@ -1,137 +1,129 @@
-import { MessageSquare, Users, Calendar, Megaphone } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Heart, MessageCircle, Share, MoreHorizontal, Plus } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Community = () => {
-  const forumCategories = [
-    { name: "Computer Science", posts: 245, members: 1200, icon: "💻" },
-    { name: "Engineering", posts: 189, members: 980, icon: "⚙️" },
-    { name: "Business Studies", posts: 156, members: 850, icon: "📊" },
-    { name: "Study Groups", posts: 324, members: 2100, icon: "📚" },
+  const storyUsers = [
+    { name: "Your S...", initial: "+", isAdd: true },
+    { name: "Sarah", initial: "S", bgColor: "bg-orange-400" },
+    { name: "John", initial: "J", bgColor: "bg-gray-500" },
+    { name: "Emma", initial: "E", bgColor: "bg-purple-500" },
+    { name: "Mike", initial: "M", bgColor: "bg-green-500" }
   ];
 
-  const recentPosts = [
+  const posts = [
     {
-      title: "CS301 Midterm Study Group",
-      author: "Sarah M.",
-      time: "2 hours ago",
-      replies: 12,
-      category: "Computer Science"
+      id: 1,
+      author: "Sarah Johnson",
+      department: "Computer Science, Year 3",
+      time: "2h",
+      content: "Just finished my machine learning project! The neural network is finally working perfectly. Anyone else struggling with backpropagation? 🤖",
+      image: "/api/placeholder/400/200",
+      likes: 24,
+      comments: 8,
+      shares: 3
     },
     {
-      title: "Anyone selling Engineering Textbooks?",
-      author: "Mike J.",
-      time: "4 hours ago",
-      replies: 8,
-      category: "Engineering"
-    },
-    {
-      title: "Business Project Partners Needed",
-      author: "Emma R.",
-      time: "1 day ago",
-      replies: 15,
-      category: "Business Studies"
+      id: 2,
+      author: "Mike Chen", 
+      department: "Business Administration, Year 2",
+      time: "4h",
+      content: "Study group forming for tomorrow's marketing exam! Meeting at the library 3rd floor. Bring your notes and let's ace this together! 📚",
+      likes: 15,
+      comments: 12,
+      shares: 5
     }
   ];
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Community Hub</h1>
-          <p className="text-muted-foreground">Connect, discuss, and collaborate with your fellow students</p>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-md mx-auto">
+        {/* Stories */}
+        <div className="mb-6">
+          <div className="flex space-x-3 overflow-x-auto pb-2">
+            {storyUsers.map((user, index) => (
+              <div key={index} className="flex flex-col items-center min-w-0 flex-shrink-0">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-medium text-sm ${
+                  user.isAdd ? 'bg-gray-200 border-2 border-dashed border-gray-400' : user.bgColor
+                }`}>
+                  {user.isAdd ? <Plus className="h-5 w-5 text-gray-600" /> : user.initial}
+                </div>
+                <span className="text-xs text-gray-600 mt-1 text-center truncate w-14">
+                  {user.name}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <Card className="hover:shadow-card transition-smooth cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <MessageSquare className="h-8 w-8 text-primary mx-auto mb-2" />
-              <h3 className="font-semibold">Forums</h3>
-              <p className="text-sm text-muted-foreground">Join discussions</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-card transition-smooth cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <Users className="h-8 w-8 text-accent mx-auto mb-2" />
-              <h3 className="font-semibold">Study Groups</h3>
-              <p className="text-sm text-muted-foreground">Find study partners</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-card transition-smooth cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <Calendar className="h-8 w-8 text-primary-glow mx-auto mb-2" />
-              <h3 className="font-semibold">Events</h3>
-              <p className="text-sm text-muted-foreground">Campus activities</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-card transition-smooth cursor-pointer">
-            <CardContent className="p-4 text-center">
-              <Megaphone className="h-8 w-8 text-destructive mx-auto mb-2" />
-              <h3 className="font-semibold">Announcements</h3>
-              <p className="text-sm text-muted-foreground">Important updates</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Forum Categories */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Discussion Forums</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {forumCategories.map((category, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/50 transition-smooth cursor-pointer">
-                      <div className="flex items-center space-x-4">
-                        <span className="text-2xl">{category.icon}</span>
-                        <div>
-                          <h3 className="font-semibold">{category.name}</h3>
-                          <p className="text-sm text-muted-foreground">{category.members} members</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-primary">{category.posts}</p>
-                        <p className="text-sm text-muted-foreground">posts</p>
-                      </div>
+        {/* Posts */}
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <Card key={post.id} className="bg-white shadow-sm">
+              <CardContent className="p-4">
+                {/* Post Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-gray-200 text-gray-600">
+                        {post.author.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium text-gray-900">{post.author}</h3>
+                      <p className="text-xs text-gray-500">{post.department}</p>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex items-center space-x-2 text-gray-500">
+                    <span className="text-xs">{post.time}</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </div>
+                </div>
+
+                {/* Post Content */}
+                <div className="mb-3">
+                  <p className="text-gray-800 text-sm leading-relaxed">
+                    {post.content}
+                  </p>
+                </div>
+
+                {/* Post Image */}
+                {post.image && (
+                  <div className="mb-3 -mx-4">
+                    <div className="bg-gray-200 h-48 flex items-center justify-center">
+                      <span className="text-gray-500">Image placeholder</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Engagement Stats */}
+                <div className="flex items-center justify-between text-gray-500 text-xs mb-3 border-b border-gray-100 pb-3">
+                  <span>{post.likes} likes</span>
+                  <div className="flex space-x-3">
+                    <span>{post.comments} comments</span>
+                    <span>{post.shares} shares</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-around">
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-gray-600">
+                    <Heart className="h-4 w-4" />
+                    <span className="text-xs">Like</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-gray-600">
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="text-xs">Comment</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-gray-600">
+                    <Share className="h-4 w-4" />
+                    <span className="text-xs">Share</span>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Recent Activity */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Posts</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentPosts.map((post, index) => (
-                    <div key={index} className="border-b pb-4 last:border-b-0">
-                      <h4 className="font-semibold text-sm mb-1 hover:text-primary cursor-pointer">{post.title}</h4>
-                      <p className="text-xs text-muted-foreground mb-2">by {post.author} • {post.time}</p>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs bg-secondary px-2 py-1 rounded">{post.category}</span>
-                        <span className="text-xs text-muted-foreground">{post.replies} replies</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button variant="outline" size="sm" className="w-full mt-4">
-                  View All Posts
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          ))}
         </div>
       </div>
     </div>
