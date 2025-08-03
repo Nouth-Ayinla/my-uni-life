@@ -1,62 +1,91 @@
-import { Search, Filter, ShoppingCart, Star } from "lucide-react";
+import { useState } from "react";
+import { Search, Filter, ShoppingCart, Star, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 const Store = () => {
-  const categories = [
-    { name: "Textbooks", count: 156, icon: "📚" },
-    { name: "Electronics", count: 89, icon: "💻" },
-    { name: "Stationery", count: 234, icon: "✏️" },
-    { name: "Food & Drinks", count: 67, icon: "🍕" },
-    { name: "Services", count: 45, icon: "🔧" },
-    { name: "Clothing", count: 123, icon: "👕" },
+  const [activeTab, setActiveTab] = useState("campus");
+
+  const campusCategories = [
+    { name: "Apparel", count: 45, icon: "👕" },
+    { name: "Books", count: 78, icon: "📚" },
+    { name: "Accessories", count: 32, icon: "🎒" },
+    { name: "Food", count: 23, icon: "🍕" },
   ];
 
-  const featuredItems = [
+  const studentCategories = [
+    { name: "Gadgets", count: 89, icon: "💻" },
+    { name: "Educational Materials", count: 156, icon: "📚" },
+    { name: "Food", count: 45, icon: "🍽️" },
+    { name: "Books", count: 67, icon: "📖" },
+  ];
+
+  const campusStoreItems = [
     {
       id: 1,
-      title: "Calculus Textbook - 12th Edition",
-      price: "$45",
-      originalPrice: "$120",
+      title: "Official University Water Bottle",
+      price: "₦3,500",
+      originalPrice: "",
       rating: 4.8,
-      reviews: 23,
-      seller: "John D.",
-      image: "📘",
-      condition: "Like New"
+      reviews: 67,
+      seller: "Official",
+      image: "🧴",
+      condition: "New",
+      category: "Accessories"
     },
     {
       id: 2,
-      title: "MacBook Pro 13-inch (2021)",
-      price: "$800",
-      originalPrice: "$1,200",
-      rating: 4.9,
-      reviews: 15,
-      seller: "Sarah K.",
-      image: "💻",
-      condition: "Excellent"
-    },
+      title: "Semester Meal Plans",
+      price: "₦85,000",
+      originalPrice: "",
+      rating: 4.5,
+      reviews: 234,
+      seller: "Meal Plans",
+      image: "🍽️",
+      condition: "New",
+      category: "Meal Plans"
+    }
+  ];
+
+  const studentStoreItems = [
     {
       id: 3,
-      title: "Engineering Drawing Set",
-      price: "$25",
-      originalPrice: "$40",
-      rating: 4.7,
-      reviews: 31,
-      seller: "Mike L.",
-      image: "📐",
-      condition: "Good"
+      title: "iPhone 13 Pro Max",
+      price: "₦295,000",
+      originalPrice: "",
+      rating: 4.2,
+      reviews: 15,
+      seller: "Gadgets",
+      image: "📱",
+      condition: "Used",
+      category: "Gadgets"
     },
     {
       id: 4,
-      title: "Campus Meal Plan - Weekly",
-      price: "$35",
-      originalPrice: "$50",
-      rating: 4.6,
+      title: "Home-Cooked Meals",
+      price: "₦1,200",
+      originalPrice: "",
+      rating: 4.8,
       reviews: 89,
-      seller: "Campus Cafe",
-      image: "🍽️",
-      condition: "New"
+      seller: "Food",
+      image: "🍲",
+      condition: "Fresh",
+      category: "Food"
+    },
+    {
+      id: 5,
+      title: "GST 102 Textbook",
+      price: "₦500",
+      originalPrice: "",
+      rating: 4.6,
+      reviews: 23,
+      seller: "Educational Materials",
+      image: "📚",
+      condition: "Used",
+      category: "Educational Materials"
     }
   ];
 
@@ -72,7 +101,7 @@ const Store = () => {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">UniStore</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Campus Store</h1>
           <p className="text-muted-foreground">Your campus marketplace for everything you need</p>
         </div>
 
@@ -81,58 +110,75 @@ const Store = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search for textbooks, electronics, services..." 
+              placeholder="Search store items..." 
               className="pl-10"
             />
           </div>
           <Button variant="outline" className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-          <Button variant="outline" className="flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
-            Cart (0)
+            <Badge variant="destructive" className="ml-1">3</Badge>
           </Button>
         </div>
 
-        {/* Categories */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Shop by Category</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map((category, index) => (
-              <Card key={index} className="hover:shadow-card transition-smooth cursor-pointer">
-                <CardContent className="p-4 text-center">
-                  <span className="text-3xl mb-2 block">{category.icon}</span>
-                  <h3 className="font-semibold text-sm">{category.name}</h3>
-                  <p className="text-xs text-muted-foreground">{category.count} items</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+        {/* Store Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="campus" className="flex items-center gap-2">
+              Campus Store
+            </TabsTrigger>
+            <TabsTrigger value="student" className="flex items-center gap-2">
+              Student Store
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Featured Items */}
-          <div className="lg:col-span-3">
-            <h2 className="text-xl font-semibold mb-4">Featured Items</h2>
+          <TabsContent value="campus" className="space-y-6 mt-8">
+            {/* New Gadgets Banner */}
+            <Card className="bg-gradient-primary text-white overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">New Gadgets!</h3>
+                    <p className="text-white/90">Latest tech arrivals</p>
+                  </div>
+                  <Button variant="secondary" size="sm">
+                    Shop Now
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Categories */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {campusCategories.map((category, index) => (
+                <Card key={index} className="hover:shadow-card transition-smooth cursor-pointer">
+                  <CardContent className="p-4 text-center">
+                    <span className="text-3xl mb-2 block">{category.icon}</span>
+                    <h3 className="font-semibold text-sm">{category.name}</h3>
+                    <p className="text-xs text-muted-foreground">{category.count} items</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Campus Store Items */}
             <div className="grid md:grid-cols-2 gap-6">
-              {featuredItems.map((item) => (
+              {campusStoreItems.map((item) => (
                 <Card key={item.id} className="hover:shadow-card transition-smooth cursor-pointer">
                   <CardContent className="p-4">
-                    <div className="text-center mb-4">
-                      <span className="text-6xl">{item.image}</span>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="text-center flex-1">
+                        <span className="text-6xl">{item.image}</span>
+                      </div>
+                      <Button variant="ghost" size="icon">
+                        <Heart className="h-4 w-4" />
+                      </Button>
                     </div>
                     
                     <h3 className="font-semibold mb-2">{item.title}</h3>
                     
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg font-bold text-primary">{item.price}</span>
-                        <span className="text-sm text-muted-foreground line-through">{item.originalPrice}</span>
-                      </div>
-                      <span className="text-xs bg-accent text-accent-foreground px-2 py-1 rounded">
-                        {item.condition}
-                      </span>
+                      <span className="text-lg font-bold text-primary">{item.price}</span>
+                      <Badge variant="secondary">{item.category}</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between mb-4">
@@ -141,7 +187,7 @@ const Store = () => {
                         <span className="text-sm font-medium">{item.rating}</span>
                         <span className="text-sm text-muted-foreground">({item.reviews})</span>
                       </div>
-                      <span className="text-sm text-muted-foreground">by {item.seller}</span>
+                      <span className="text-sm text-muted-foreground">{item.condition}</span>
                     </div>
                     
                     <Button variant="hero" size="sm" className="w-full">
@@ -151,7 +197,63 @@ const Store = () => {
                 </Card>
               ))}
             </div>
-          </div>
+          </TabsContent>
+
+          <TabsContent value="student" className="space-y-6 mt-8">
+            {/* Categories */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {studentCategories.map((category, index) => (
+                <Card key={index} className="hover:shadow-card transition-smooth cursor-pointer">
+                  <CardContent className="p-4 text-center">
+                    <span className="text-3xl mb-2 block">{category.icon}</span>
+                    <h3 className="font-semibold text-sm">{category.name}</h3>
+                    <p className="text-xs text-muted-foreground">{category.count} items</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Student Store Items */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {studentStoreItems.map((item) => (
+                <Card key={item.id} className="hover:shadow-card transition-smooth cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="text-center flex-1">
+                        <span className="text-6xl">{item.image}</span>
+                      </div>
+                      <Button variant="ghost" size="icon">
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <h3 className="font-semibold mb-2">{item.title}</h3>
+                    
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-lg font-bold text-primary">{item.price}</span>
+                      <Badge variant="secondary">{item.category}</Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-medium">{item.rating}</span>
+                        <span className="text-sm text-muted-foreground">({item.reviews})</span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">{item.condition}</span>
+                    </div>
+                    
+                    <Button variant="hero" size="sm" className="w-full">
+                      Add to Cart
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        <div className="grid lg:grid-cols-4 gap-8 mt-8">
 
           {/* Trusted Vendors */}
           <div>

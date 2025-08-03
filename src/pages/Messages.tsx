@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Heart, 
   MessageCircle, 
@@ -14,7 +16,10 @@ import {
   Image as ImageIcon,
   Video,
   MapPin,
-  Clock
+  Clock,
+  Send,
+  Search,
+  MoreVertical
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,10 +41,34 @@ interface Status {
   };
 }
 
+interface Chat {
+  id: string;
+  user: {
+    name: string;
+    avatar: string;
+    isOnline: boolean;
+  };
+  lastMessage: string;
+  timestamp: string;
+  unread: number;
+}
+
+interface Message {
+  id: string;
+  senderId: string;
+  content: string;
+  timestamp: string;
+  isSent: boolean;
+}
+
 const Messages = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [statuses, setStatuses] = useState<Status[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -55,30 +84,46 @@ const Messages = () => {
     setStatuses([
       {
         id: "1",
-        user: { name: "Sarah Johnson", avatar: "", type: "Student" },
-        content: "Just finished my Computer Science assignment! The algorithm implementation was challenging but fun 💻",
-        timestamp: "2 hours ago",
-        likes: 15,
-        comments: 3,
+        user: { name: "Sarah Johnson", avatar: "", type: "Computer Science, Year 3" },
+        content: "Just finished my machine learning project! The neural network is finally working perfectly. Anyone else struggling with backpropagation? 🤖",
+        timestamp: "2h",
+        likes: 21,
+        comments: 8,
         isLiked: false
       },
       {
         id: "2",
-        user: { name: "Mike's Cafeteria", avatar: "", type: "Food Vendor" },
-        content: "Fresh jollof rice and chicken available now! Special student discount - ₦500 per plate 🍛",
-        timestamp: "4 hours ago",
-        likes: 28,
-        comments: 7,
-        isLiked: true
+        user: { name: "Mike Chen", avatar: "", type: "Business Administration, Year 2" },
+        content: "Study group forming for tomorrow's marketing exam! Meeting at the library 3rd floor. Bring your notes and let's ace this together! 📚",
+        timestamp: "4h",
+        likes: 15,
+        comments: 12,
+        isLiked: false
+      }
+    ]);
+
+    // Mock chats data
+    setChats([
+      {
+        id: "1",
+        user: { name: "Sarah Johnson", avatar: "", isOnline: true },
+        lastMessage: "Hey, did you understand the algorithm assignment?",
+        timestamp: "2 min ago",
+        unread: 2
+      },
+      {
+        id: "2",
+        user: { name: "Mike Chen", avatar: "", isOnline: false },
+        lastMessage: "Thanks for sharing your notes!",
+        timestamp: "1 hour ago",
+        unread: 0
       },
       {
         id: "3",
-        user: { name: "Alex Driver", avatar: "", type: "Driver" },
-        content: "Heading to town from campus in 15 minutes. 2 seats available for shared ride ✋",
-        timestamp: "6 hours ago",
-        likes: 5,
-        comments: 2,
-        isLiked: false
+        user: { name: "Emma Wilson", avatar: "", isOnline: true },
+        lastMessage: "Are you coming to the study group?",
+        timestamp: "3 hours ago",
+        unread: 1
       }
     ]);
   }, [navigate]);
@@ -115,6 +160,47 @@ const Messages = () => {
           }
         : status
     ));
+  };
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim() || !selectedChat) return;
+
+    const newMsg: Message = {
+      id: Date.now().toString(),
+      senderId: "current-user",
+      content: newMessage,
+      timestamp: "Just now",
+      isSent: true
+    };
+
+    setMessages([...messages, newMsg]);
+    setNewMessage("");
+    
+    toast({
+      title: "Message Sent",
+      description: "Your message has been delivered.",
+    });
+  };
+
+  const handleSelectChat = (chatId: string) => {
+    setSelectedChat(chatId);
+    // Mock messages for selected chat
+    setMessages([
+      {
+        id: "1",
+        senderId: chatId,
+        content: "Hey, how are you doing?",
+        timestamp: "10:30 AM",
+        isSent: false
+      },
+      {
+        id: "2",
+        senderId: "current-user",
+        content: "I'm good! Working on the project. How about you?",
+        timestamp: "10:32 AM",
+        isSent: true
+      }
+    ]);
   };
 
   if (!isAuthenticated) {
@@ -230,14 +316,141 @@ const Messages = () => {
           </TabsContent>
 
           <TabsContent value="chats">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Direct Messages</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Direct messaging feature will be implemented here.</p>
-              </CardContent>
-            </Card>
+            <div className="grid lg:grid-cols-3 gap-6 h-[600px]">
+              {/* Chat List */}
+              <Card className="shadow-card">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Messages</CardTitle>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Search conversations..." 
+                      className="pl-10"
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[450px]">
+                    {chats.map((chat) => (
+                      <div
+                        key={chat.id}
+                        onClick={() => handleSelectChat(chat.id)}
+                        className={`p-4 border-b cursor-pointer hover:bg-accent transition-colors ${
+                          selectedChat === chat.id ? "bg-accent" : ""
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="relative">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={chat.user.avatar} />
+                              <AvatarFallback className="bg-gradient-primary text-white">
+                                {chat.user.name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            {chat.user.isOnline && (
+                              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full"></div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-sm truncate">{chat.user.name}</h4>
+                              <span className="text-xs text-muted-foreground">{chat.timestamp}</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
+                          </div>
+                          {chat.unread > 0 && (
+                            <Badge variant="destructive" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                              {chat.unread}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Chat Window */}
+              <div className="lg:col-span-2">
+                {selectedChat ? (
+                  <Card className="shadow-card h-full flex flex-col">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={chats.find(c => c.id === selectedChat)?.user.avatar} />
+                          <AvatarFallback className="bg-gradient-primary text-white">
+                            {chats.find(c => c.id === selectedChat)?.user.name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h4 className="font-medium">{chats.find(c => c.id === selectedChat)?.user.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {chats.find(c => c.id === selectedChat)?.user.isOnline ? "Online" : "Last seen recently"}
+                          </p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col p-0">
+                      <ScrollArea className="flex-1 p-4">
+                        <div className="space-y-4">
+                          {messages.map((message) => (
+                            <div
+                              key={message.id}
+                              className={`flex ${message.isSent ? "justify-end" : "justify-start"}`}
+                            >
+                              <div
+                                className={`max-w-[70%] p-3 rounded-lg ${
+                                  message.isSent
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-accent text-accent-foreground"
+                                }`}
+                              >
+                                <p className="text-sm">{message.content}</p>
+                                <p className="text-xs opacity-70 mt-1">{message.timestamp}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                      <div className="p-4 border-t">
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            placeholder="Type a message..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                            className="flex-1"
+                          />
+                          <Button
+                            onClick={handleSendMessage}
+                            disabled={!newMessage.trim()}
+                            size="icon"
+                            variant="hero"
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="shadow-card h-full flex items-center justify-center">
+                    <CardContent>
+                      <div className="text-center">
+                        <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="font-medium mb-2">Select a conversation</h3>
+                        <p className="text-sm text-muted-foreground">Choose a chat from the list to start messaging</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
