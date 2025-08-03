@@ -19,7 +19,6 @@ const Community = () => {
       department: "Computer Science, Year 3",
       time: "2h",
       content: "Just finished my machine learning project! The neural network is finally working perfectly. Anyone else struggling with backpropagation? 🤖",
-      image: "/api/placeholder/400/200",
       likes: 24,
       comments: 8,
       shares: 3
@@ -88,14 +87,6 @@ const Community = () => {
                   </p>
                 </div>
 
-                {/* Post Image */}
-                {post.image && (
-                  <div className="mb-3 -mx-4">
-                    <div className="bg-gray-200 h-48 flex items-center justify-center">
-                      <span className="text-gray-500">Image placeholder</span>
-                    </div>
-                  </div>
-                )}
 
                 {/* Engagement Stats */}
                 <div className="flex items-center justify-between text-gray-500 text-xs mb-3 border-b border-gray-100 pb-3">
